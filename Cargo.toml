@@ -1,0 +1,12 @@
+[package]
+name = "the-first-code-of-rust"
+version = "0.1.0"
+authors = ["jiangWeixian <jiangweixian1994@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wasm-bindgen = { version = "0.2.67" }
+swc_common = { version = "0.10.9", features = ["tty-emitter"] } 
+swc_ecma_parser = { version = "0.45.6" }
