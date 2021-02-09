@@ -1,13 +1,7 @@
-// #[doc = "Outer comment"]
-// fn main() {
-//   println!("Hello, world!");
-//   let x: i64 = 1;
-//   println!("{}", x)
-// }
-
-
 extern crate swc_common;
 extern crate swc_ecma_parser;
+use md5;
+use std::format;
 use swc_common::{
   errors::{ColorConfig, Handler},
   sync::Lrc,
@@ -48,6 +42,14 @@ fn main() {
       .parse_module()
       .map_err(|e| e.into_diagnostic(&handler).emit())
       .expect("Failed to parse module.");
+
+  let tokens = parser.input().take();
+
+
+  for token in &tokens {
+    println!("Token: {:?}", md5::compute(format!("{:?}", token.token)))
+  }
+
 
   println!("Tokens: {:?}", parser.input().take());
 }
