@@ -7,6 +7,7 @@ use crypto::md5::Md5;
 use std::format;
 use std::collections::HashMap;
 use std::path::Path;
+use clap::App;
 use swc_common::{
   errors::{ColorConfig, Handler},
   sync::Lrc,
@@ -106,12 +107,25 @@ impl TokenMap {
 }
 
 fn main() {
+  let matches = App::new("myapp")
+        .version("1.0")
+        .author("Jiangweixian. <Jiangweixian1994@gmail.com>")
+        .about("Does awesome things")
+        .arg("-f, --filepath=[FILE] 'Sets a custom config file'")
+        .arg("-v...                'Sets the level of verbosity'")
+        .get_matches();
+
+  let filepath = match matches.value_of("filepath") {
+    Some(f) => f,
+    _ => "",
+  };
+
   let cm: Lrc<SourceMap> = Default::default();
   let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
 
   // Real usage
   let fm = cm
-      .load_file(Path::new("test.js"))
+      .load_file(Path::new(filepath))
       .expect("failed to load test.js");
 
   // let fm = cm.new_source_file(
