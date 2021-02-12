@@ -7,11 +7,11 @@ use crypto::md5::Md5;
 use std::format;
 use std::collections::HashMap;
 use std::path::Path;
-use clap::App;
+use clap::{Arg, App};
 use swc_common::{
   errors::{ColorConfig, Handler},
   sync::Lrc,
-  SourceMap,
+  FileName, SourceMap,
   Span, BytePos
 };
 use swc_ecma_parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax};
@@ -76,6 +76,7 @@ impl TokenMap {
   fn next(&mut self) -> TokenItem {
     let istart = min(self.position, self.size() - 1);
     let iend = min(self.position + self.min_token, self.size() - 1);
+    println!("{},{}", istart, iend);
     let start = istart * 32;
     let end = iend * 32;
     let start_loc = match self.get(istart) {
@@ -91,7 +92,7 @@ impl TokenMap {
       start: start_loc,
       end: end_loc
     };
-    if self.position < self.size() - 1 {
+    if self.position < self.size() - 2 {
       self.position = self.position + 1;
       TokenItem {
         done: false,
@@ -106,73 +107,9 @@ impl TokenMap {
   }
 }
 
-fn main() {
-  let matches = App::new("myapp")
-        .version("1.0")
-        .author("Jiangweixian. <Jiangweixian1994@gmail.com>")
-        .about("Does awesome things")
-        .arg("-f, --filepath=[FILE] 'Sets a custom config file'")
-        .arg("-v...                'Sets the level of verbosity'")
-        .get_matches();
-
-  let filepath = match matches.value_of("filepath") {
-    Some(f) => f,
-    _ => "",
-  };
-
-  let cm: Lrc<SourceMap> = Default::default();
-  let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
-
-  // Real usage
-  let fm = cm
-      .load_file(Path::new(filepath))
-      .expect("failed to load test.js");
-
-  // let fm = cm.new_source_file(
-  //     FileName::Custom("test.js".into()),
-  //     "function foo() {} function foo() {}".into(),
-  // );
-
-  let lexer = Lexer::new(
-      Syntax::Es(Default::default()),
-      Default::default(),
-      StringInput::from(&*fm),
-      None,
-  );
-
-  let capturing = Capturing::new(lexer);
-
-  let mut parser = Parser::new_from(capturing);
-
-  for e in parser.take_errors() {
-      e.into_diagnostic(&handler).emit();
-  }
-
-  let _module = parser
-      .parse_module()
-      .map_err(|e| e.into_diagnostic(&handler).emit())
-      .expect("Failed to parse module.");
-
-  let tokens = parser.input().take();
-  let mut md5 = Md5::new();
-  let mut str = String::new();
-
-  for token in &tokens {
-    md5.input_str(&format!("{:?}", token.token));
-    let hash = md5.result_str();
-    md5.reset();
-    str.push_str(&hash);
-    println!("Token: {:?}, lo: {:?}, hi: {:?}", token.token, token.span.lo, token.span.hi)
-  }
-
-  let mut store: HashMap<String, TokenItem> = HashMap::new();
-  let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: 50 };
-  let mut clone: Option<Clone> = None;
+fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clones: &mut Vec<Clone>) {
   let mut saved: Option<CloneLoc> = None;
-  let mut founds = 0;
-  let mut clones: Vec<Clone> = Vec::new();
-
-  println!("Map, {:?}", tokenmap.str);
+  let mut clone: Option<Clone> = None;
   loop {
     let item = tokenmap.next();
     let hi = item.value.end.unwrap().hi;
@@ -228,9 +165,8 @@ fn main() {
             let duplication_a = CloneLoc { lo: duplication_a_lo, hi: duplication_a_hi };
             let duplication_b = CloneLoc { lo: duplication_b_lo, hi: duplication_b_hi };
             clone = Some(Clone { duplication_a, duplication_b });
-            println!("Clone found, set clone")
           },
-          Some(_) => println!("Clone already exit, but do nothing")
+          Some(_) => (),
         }
       }
       // code frame not in store
@@ -238,8 +174,6 @@ fn main() {
         // save clone
         match clone {
           Some(item) => {
-            founds += 1;
-            println!("Save {} clone {:?}", founds, clone);
             clones.push(item);
           }
           _ => (),
@@ -251,21 +185,149 @@ fn main() {
       }
     }
     if done == true {
+      // save clone
+      match clone {
+        Some(item) => {
+          clones.push(item);
+        }
+        _ => (),
+      };
       break
     } else {
       if let Some(ref mut c) = clone {
         c.enlarge(saved.unwrap().hi, hi);
       }
     }
-    println!("Enlarge clone {:?}", clone);
+    println!("Enlarge clone {:?}/{:?}", clone, saved);
   }
+}
+
+fn tokensize_with_str(input: String) -> std::vec::Vec<swc_ecma_parser::token::TokenAndSpan> {
+  let cm: Lrc<SourceMap> = Default::default();
+  let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
+  let fm = cm.new_source_file(
+    FileName::Custom("test.js".into()),
+    input,
+  );
+
+  let lexer = Lexer::new(
+      Syntax::Es(Default::default()),
+      Default::default(),
+      StringInput::from(&*fm),
+      None,
+  );
+
+  let capturing = Capturing::new(lexer);
+
+  let mut parser = Parser::new_from(capturing);
+
+  for e in parser.take_errors() {
+      e.into_diagnostic(&handler).emit();
+  }
+
+  let _module = parser
+      .parse_module()
+      .map_err(|e| e.into_diagnostic(&handler).emit())
+      .expect("Failed to parse module.");
+
+  let tokens = parser.input().take();
+  tokens
+}
+
+fn tokensize_with_path(filepath: &str) -> std::vec::Vec<swc_ecma_parser::token::TokenAndSpan> {
+  let cm: Lrc<SourceMap> = Default::default();
+  let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
+
+  let fm = cm
+      .load_file(Path::new(filepath))
+      .expect("failed to load test.js");
+
+  let lexer = Lexer::new(
+      Syntax::Es(Default::default()),
+      Default::default(),
+      StringInput::from(&*fm),
+      None,
+  );
+
+  let capturing = Capturing::new(lexer);
+
+  let mut parser = Parser::new_from(capturing);
+
+  for e in parser.take_errors() {
+      e.into_diagnostic(&handler).emit();
+  }
+
+  let _module = parser
+      .parse_module()
+      .map_err(|e| e.into_diagnostic(&handler).emit())
+      .expect("Failed to parse module.");
+
+  let tokens = parser.input().take();
+  tokens
+}
+
+fn main() {
+  let matches = App::new("myapp")
+        .version("1.0")
+        .author("Jiangweixian. <Jiangweixian1994@gmail.com>")
+        .about("Does awesome things")
+        .arg("-f, --filepath=[FILE] 'Sets a detect file'")
+        .arg(Arg::new("min_token").short('m').long("min_token").about("Sets min tokens").default_value("2"))
+        .get_matches();
+
+  let filepath = match matches.value_of("filepath") {
+    Some(f) => f,
+    _ => "",
+  };
+
+  let min_token = match matches.value_of("min_token") {
+    Some(f) => f,
+    _ => "",
+  };
+
+  let mut md5 = Md5::new();
+
+  let mut store: HashMap<String, TokenItem> = HashMap::new();
+  let mut clones: Vec<Clone> = Vec::new();
+
+  // detect with file path
+  let times = [String::from("function foo() {} function foo() {}"), String::from("function foo() {}")];
+  for _ in &times {
+    let tokens = tokensize_with_path(filepath);
+    let mut str = String::new();
+    for token in &tokens {
+      md5.input_str(&format!("{:?}", token.token));
+      let hash = md5.result_str();
+      md5.reset();
+      str.push_str(&hash);
+      // println!("Token: {:?}, lo: {:?}, hi: {:?}", token.token, token.span.lo, token.span.hi)
+    }
+    let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: min_token.parse().unwrap() };
+    detect(&mut tokenmap, &mut store, &mut clones);
+  }
+
+  // detect with file content
+  // let times = [String::from("function foo() {} function foo() {}"), String::from("function foo() {}")];
+  // for time in &times {
+  //   let tokens = tokensize_with_str(time.into());
+  //   let mut str = String::new();
+  //   for token in &tokens {
+  //     md5.input_str(&format!("{:?}", token.token));
+  //     let hash = md5.result_str();
+  //     md5.reset();
+  //     str.push_str(&hash);
+  //     // println!("Token: {:?}, lo: {:?}, hi: {:?}", token.token, token.span.lo, token.span.hi)
+  //   }
+  //   let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: 2 };
+  //   detect(&mut tokenmap, &mut store, &mut clones);
+  // }
+
+  println!("{}", clones.len());
 
   for c in &clones {
     println!("found duplication a {:?} {:?}", c.duplication_a.lo, c.duplication_a.hi);
     println!("found duplication b {:?} {:?}", c.duplication_b.lo, c.duplication_b.hi);
   }
-
-  println!("found {:?} clones", founds)
 
   // println!("Token: {:?}", tokenmap.substring(0, 2));
   // println!("Token: {:?}", tokenmap.get(0));
