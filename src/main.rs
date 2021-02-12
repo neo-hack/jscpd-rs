@@ -8,6 +8,8 @@ use std::format;
 use std::collections::HashMap;
 use std::path::Path;
 use clap::{Arg, App};
+use ignore::{WalkBuilder, Walk};
+use ignore::overrides::{Override, OverrideBuilder};
 use swc_common::{
   errors::{ColorConfig, Handler},
   sync::Lrc,
@@ -234,16 +236,16 @@ fn tokensize_with_str(input: String) -> std::vec::Vec<swc_ecma_parser::token::To
   tokens
 }
 
-fn tokensize_with_path(filepath: &str) -> std::vec::Vec<swc_ecma_parser::token::TokenAndSpan> {
+fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::token::TokenAndSpan> {
   let cm: Lrc<SourceMap> = Default::default();
   let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
 
   let fm = cm
-      .load_file(Path::new(filepath))
+      .load_file(filepath)
       .expect("failed to load test.js");
 
   let lexer = Lexer::new(
-      Syntax::Es(Default::default()),
+      Syntax::Typescript(Default::default()),
       Default::default(),
       StringInput::from(&*fm),
       None,
@@ -290,22 +292,6 @@ fn main() {
   let mut store: HashMap<String, TokenItem> = HashMap::new();
   let mut clones: Vec<Clone> = Vec::new();
 
-  // detect with file path
-  let times = [String::from("function foo() {} function foo() {}"), String::from("function foo() {}")];
-  for _ in &times {
-    let tokens = tokensize_with_path(filepath);
-    let mut str = String::new();
-    for token in &tokens {
-      md5.input_str(&format!("{:?}", token.token));
-      let hash = md5.result_str();
-      md5.reset();
-      str.push_str(&hash);
-      // println!("Token: {:?}, lo: {:?}, hi: {:?}", token.token, token.span.lo, token.span.hi)
-    }
-    let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: min_token.parse().unwrap() };
-    detect(&mut tokenmap, &mut store, &mut clones);
-  }
-
   // detect with file content
   // let times = [String::from("function foo() {} function foo() {}"), String::from("function foo() {}")];
   // for time in &times {
@@ -322,12 +308,49 @@ fn main() {
   //   detect(&mut tokenmap, &mut store, &mut clones);
   // }
 
+  let mut _override_builder = OverrideBuilder::new("./");
+  _override_builder.add("**/*.ts");
+  _override_builder.add("!node_modules");
+  let override_builder = _override_builder.build();
+  if let Ok(instance) = override_builder {
+    let mut builder = WalkBuilder::new("./");
+    builder.overrides(instance);
+    builder.standard_filters(true);
+    let walk = builder.build();
+    for result in walk {
+      // Each item yielded by the iterator is either a directory entry or an
+      // error, so either print the path or the error.
+      match result {
+          Ok(entry) => {
+            if let Some(i) = entry.file_type() {
+              if !i.is_dir() {
+                println!("file {}", entry.path().display());
+                let tokens = tokensize_with_path(entry.path());
+                let mut str = String::new();
+                for token in &tokens {
+                  md5.input_str(&format!("{:?}", token.token));
+                  let hash = md5.result_str();
+                  md5.reset();
+                  str.push_str(&hash);
+                  // println!("Token: {:?}, lo: {:?}, hi: {:?}", token.token, token.span.lo, token.span.hi)
+                }
+                let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: min_token.parse().unwrap() };
+                detect(&mut tokenmap, &mut store, &mut clones);
+              }
+            };
+          },
+          Err(err) => println!("ERROR: {}", err),
+      }
+    }
+  }
+
   println!("{}", clones.len());
 
   for c in &clones {
     println!("found duplication a {:?} {:?}", c.duplication_a.lo, c.duplication_a.hi);
     println!("found duplication b {:?} {:?}", c.duplication_b.lo, c.duplication_b.hi);
   }
+
 
   // println!("Token: {:?}", tokenmap.substring(0, 2));
   // println!("Token: {:?}", tokenmap.get(0));
