@@ -326,6 +326,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd25036021b0de88a0aff6b850051563c6516d0bf53f8638938edbb9de732736"
 
 [[package]]
+name = "jscpd-rs"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "ignore",
+ "rust-crypto",
+ "serde",
+ "serde_json",
+ "swc_common",
+ "swc_ecma_parser",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -906,20 +920,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "203008d98caf094106cfaba70acfed15e18ed3ddb7d94e49baec153a2b462789"
 dependencies = [
  "unicode-width",
-]
-
-[[package]]
-name = "the-first-code-of-rust"
-version = "0.1.0"
-dependencies = [
- "clap",
- "ignore",
- "rust-crypto",
- "serde",
- "serde_json",
- "swc_common",
- "swc_ecma_parser",
- "wasm-bindgen",
 ]
 
 [[package]]

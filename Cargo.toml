@@ -1,5 +1,5 @@
 [package]
-name = "the-first-code-of-rust"
+name = "jscpd-rs"
 version = "0.1.0"
 authors = ["jiangWeixian <jiangweixian1994@gmail.com>"]
 edition = "2018"
