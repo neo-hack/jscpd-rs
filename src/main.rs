@@ -8,8 +8,8 @@ use std::format;
 use std::collections::HashMap;
 use std::path::Path;
 use clap::{Arg, App};
-use ignore::{WalkBuilder, Walk};
-use ignore::overrides::{Override, OverrideBuilder};
+use ignore::{WalkBuilder};
+use ignore::overrides::{OverrideBuilder};
 use swc_common::{
   errors::{ColorConfig, Handler},
   sync::Lrc,
@@ -18,13 +18,26 @@ use swc_common::{
 };
 use swc_ecma_parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct CloneLoc {
+  source_id: String,
+  code_frame: Option<String>,
   lo: BytePos,
   hi: BytePos,
 }
 
-#[derive(Debug, Clone, Copy)]
+impl CloneLoc {
+  fn new(source_id: String, lo: BytePos, hi: BytePos) -> CloneLoc {
+    CloneLoc {
+      source_id,
+      lo,
+      hi,
+      code_frame: None,
+    }
+  }
+}
+
+#[derive(Debug, Clone)]
 struct Clone {
   duplication_a: CloneLoc,
   duplication_b: CloneLoc
@@ -40,6 +53,7 @@ impl Clone {
 #[derive(Debug, Clone)]
 struct TokenItemValue {
   id: String,
+  source_id: String,
   start: Option<Span>,
   end: Option<Span>,
 }
@@ -53,6 +67,7 @@ struct TokenItem {
 struct TokenMap {
   tokens: std::vec::Vec<swc_ecma_parser::token::TokenAndSpan>,
   str: String,
+  source_id: String,
   position: usize,
   min_token: usize
 }
@@ -92,6 +107,7 @@ impl TokenMap {
     let value = TokenItemValue {
       id: self.substring(start, end).to_string(),
       start: start_loc,
+      source_id: self.source_id.clone(),
       end: end_loc
     };
     if self.position < self.size() - 2 {
@@ -110,7 +126,7 @@ impl TokenMap {
 }
 
 fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clones: &mut Vec<Clone>) {
-  let mut saved: Option<CloneLoc> = None;
+  let mut saved: Option<BytePos> = None;
   let mut clone: Option<Clone> = None;
   loop {
     let item = tokenmap.next();
@@ -120,19 +136,13 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
     match key {
       // code frame in store
       Some(v) => {
-        let lo = match v.value.start {
-          Some(item) => {
-            item.lo
-          },
-          _ => BytePos(0),
-        };
         let hi = match v.value.end {
           Some(item) => {
             item.hi
           },
           _ => BytePos(0),
         };
-        saved = Some(CloneLoc { lo, hi });
+        saved = Some(hi);
         match clone {
           // clone found first time
           None => {
@@ -164,8 +174,8 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
               },
               _ => BytePos(0),
             };
-            let duplication_a = CloneLoc { lo: duplication_a_lo, hi: duplication_a_hi };
-            let duplication_b = CloneLoc { lo: duplication_b_lo, hi: duplication_b_hi };
+            let duplication_a = CloneLoc::new(v.value.source_id.to_string(), duplication_a_lo, duplication_a_hi);
+            let duplication_b = CloneLoc::new(item.value.source_id, duplication_b_lo, duplication_b_hi);
             clone = Some(Clone { duplication_a, duplication_b });
           },
           Some(_) => (),
@@ -176,7 +186,8 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
         // save clone
         match clone {
           Some(item) => {
-            clones.push(item);
+            let _clone = item.clone();
+            clones.push(_clone);
           }
           _ => (),
         }
@@ -197,7 +208,7 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
       break
     } else {
       if let Some(ref mut c) = clone {
-        c.enlarge(saved.unwrap().hi, hi);
+        c.enlarge(saved.unwrap(), hi);
       }
     }
     println!("Enlarge clone {:?}/{:?}", clone, saved);
@@ -334,7 +345,7 @@ fn main() {
                   str.push_str(&hash);
                   // println!("Token: {:?}, lo: {:?}, hi: {:?}", token.token, token.span.lo, token.span.hi)
                 }
-                let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: min_token.parse().unwrap() };
+                let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: min_token.parse().unwrap(), source_id: format!("{}", entry.path().display()) };
                 detect(&mut tokenmap, &mut store, &mut clones);
               }
             };
@@ -347,8 +358,8 @@ fn main() {
   println!("{}", clones.len());
 
   for c in &clones {
-    println!("found duplication a {:?} {:?}", c.duplication_a.lo, c.duplication_a.hi);
-    println!("found duplication b {:?} {:?}", c.duplication_b.lo, c.duplication_b.hi);
+    println!("found duplication a {:?} {:?} {:?}", c.duplication_a.source_id, c.duplication_a.lo, c.duplication_a.hi);
+    println!("found duplication b {:?} {:?} {:?}", c.duplication_b.source_id, c.duplication_b.lo, c.duplication_b.hi);
   }
 
 
