@@ -1,6 +1,10 @@
 extern crate swc_common;
 extern crate swc_ecma_parser;
 extern crate crypto;
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::io::prelude::*;
+use std::fs::{File, read_to_string};
 use std::cmp::min;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
@@ -18,10 +22,10 @@ use swc_common::{
 };
 use swc_ecma_parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 struct CloneLoc {
   source_id: String,
-  code_frame: Option<String>,
+  fragement: Option<String>,
   lo: BytePos,
   hi: BytePos,
 }
@@ -32,12 +36,12 @@ impl CloneLoc {
       source_id,
       lo,
       hi,
-      code_frame: None,
+      fragement: None,
     }
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 struct Clone {
   duplication_a: CloneLoc,
   duplication_b: CloneLoc
@@ -47,6 +51,12 @@ impl Clone {
   fn enlarge(&mut self, a_hi: BytePos, b_hi: BytePos) {
     self.duplication_a.hi = a_hi;
     self.duplication_b.hi = b_hi;
+  }
+  fn fragement_a(&mut self, fragement_a: String) {
+    self.duplication_a.fragement = Some(fragement_a);
+  }
+  fn fragement_b(&mut self, fragement_b: String) {
+    self.duplication_b.fragement = Some(fragement_b);
   }
 }
 
@@ -279,6 +289,13 @@ fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::token:
   tokens
 }
 
+fn save(clones: &Vec<Clone>) -> std::io::Result<()> {
+  let content = serde_json::to_string(clones)?;
+  let mut file = File::create("result.json")?;
+  file.write_all(content.as_bytes());
+  Ok(())
+}
+
 fn main() {
   let matches = App::new("myapp")
         .version("1.0")
@@ -357,11 +374,24 @@ fn main() {
 
   println!("{}", clones.len());
 
-  for c in &clones {
-    println!("found duplication a {:?} {:?} {:?}", c.duplication_a.source_id, c.duplication_a.lo, c.duplication_a.hi);
-    println!("found duplication b {:?} {:?} {:?}", c.duplication_b.source_id, c.duplication_b.lo, c.duplication_b.hi);
+  for c in &mut clones {
+    let content_a = read_to_string(c.duplication_a.source_id.clone());
+    if let Ok(content) = content_a {
+      let pos = [c.duplication_a.lo.0 as usize, c.duplication_a.hi.0 as usize];
+      let subcontent_a = &content[pos[0]..pos[1]];
+      c.fragement_a(subcontent_a.to_string());
+    }
+    let content_b = read_to_string(c.duplication_b.source_id.clone());
+    if let Ok(content) = content_b {
+      let pos = [c.duplication_b.lo.0 as usize, c.duplication_b.hi.0 as usize];
+      let subcontent_a = &content[pos[0]..pos[1]];
+      c.fragement_b(subcontent_a.to_string());
+    }
+    println!("found duplication a {:?} {:?} {:?} {:?}", c.duplication_a.source_id, c.duplication_a.lo, c.duplication_a.hi, c.duplication_a.fragement);
+    println!("found duplication b {:?} {:?} {:?} {:?}", c.duplication_b.source_id, c.duplication_b.lo, c.duplication_b.hi, c.duplication_b.fragement);
   }
 
+  save(&clones);
 
   // println!("Token: {:?}", tokenmap.substring(0, 2));
   // println!("Token: {:?}", tokenmap.get(0));
