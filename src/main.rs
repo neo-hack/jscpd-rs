@@ -20,7 +20,7 @@ use swc_common::{
   FileName, SourceMap,
   Span, BytePos
 };
-use swc_ecma_parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax};
+use swc_ecma_parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax, TsConfig};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct CloneLoc {
@@ -266,7 +266,7 @@ fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::token:
       .expect("failed to load test.js");
 
   let lexer = Lexer::new(
-      Syntax::Typescript(Default::default()),
+      Syntax::Typescript(TsConfig { tsx: true, dts: false, decorators: true, dynamic_import: true, import_assertions: true, no_early_errors: true }),
       Default::default(),
       StringInput::from(&*fm),
       None,
