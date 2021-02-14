@@ -103,7 +103,6 @@ impl TokenMap {
   fn next(&mut self) -> TokenItem {
     let istart = min(self.position, self.size() - 1);
     let iend = min(self.position + self.min_token, self.size() - 1);
-    println!("{},{}", istart, iend);
     let start = istart * 32;
     let end = iend * 32;
     let start_loc = match self.get(istart) {
@@ -120,7 +119,11 @@ impl TokenMap {
       source_id: self.source_id.clone(),
       end: end_loc
     };
-    if self.position < self.size() - 2 {
+    let mut last_pos = 1;
+    if self.size() > self.min_token {
+      last_pos = self.size() - self.min_token;
+    }
+    if self.position < last_pos {
       self.position = self.position + 1;
       TokenItem {
         done: false,
@@ -141,45 +144,35 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
   loop {
     let item = tokenmap.next();
     let hi = item.value.end.unwrap().hi;
-    let key = store.get(&item.value.id);
+    let value = store.get(&item.value.id);
     let done = item.done;
-    match key {
+    match value {
       // code frame in store
       Some(v) => {
-        let hi = match v.value.end {
-          Some(item) => {
-            item.hi
-          },
-          _ => BytePos(0),
-        };
-        saved = Some(hi);
+        saved = Some(v.value.end.unwrap().hi);
         match clone {
           // clone found first time
           None => {
             let duplication_a_lo = match v.value.start {
               Some(item) => {
-                println!("Duplication a clone found {:?}", item.lo);
                 item.lo
               },
               _ => BytePos(0),
             };
             let duplication_a_hi = match v.value.end {
               Some(item) => {
-                println!("Duplication a clone found {:?}", item.hi);
                 item.hi
               },
               _ => BytePos(0),
             };
             let duplication_b_lo = match item.value.start {
               Some(item) => {
-                println!("Duplication b clone found {:?}", item.lo);
                 item.lo
               },
               _ => BytePos(0),
             };
             let duplication_b_hi = match item.value.end {
               Some(item) => {
-                println!("Duplication b clone found {:?}", item.hi);
                 item.hi
               },
               _ => BytePos(0),
@@ -196,8 +189,7 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
         // save clone
         match clone {
           Some(item) => {
-            let _clone = item.clone();
-            clones.push(_clone);
+            clones.push(item.clone());
           }
           _ => (),
         }
@@ -208,20 +200,26 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
       }
     }
     if done == true {
+      // if let Some(ref mut c) = clone {
+      //   if saved.is_some() {
+      //     c.enlarge(saved.unwrap(), hi);
+      //   }
+      // }
       // save clone
       match clone {
         Some(item) => {
-          clones.push(item);
+          clones.push(item.clone());
         }
         _ => (),
-      };
+      }
       break
     } else {
       if let Some(ref mut c) = clone {
-        c.enlarge(saved.unwrap(), hi);
+        if saved.is_some() {
+          c.enlarge(saved.unwrap(), hi);
+        }
       }
     }
-    println!("Enlarge clone {:?}/{:?}", clone, saved);
   }
 }
 
@@ -313,12 +311,12 @@ fn main() {
 
   let min_token = match matches.value_of("min_token") {
     Some(f) => f,
-    _ => "",
+    _ => "50",
   };
 
   let cwd = match matches.value_of("cwd") {
     Some(f) => f,
-    _ => "",
+    _ => "./",
   };
 
   let mut md5 = Md5::new();
@@ -358,15 +356,13 @@ fn main() {
           Ok(entry) => {
             if let Some(i) = entry.file_type() {
               if !i.is_dir() {
-                println!("file {}", entry.path().display());
                 let tokens = tokensize_with_path(entry.path());
                 let mut str = String::new();
                 for token in &tokens {
+                  md5.reset();
                   md5.input_str(&format!("{:?}", token.token));
                   let hash = md5.result_str();
-                  md5.reset();
                   str.push_str(&hash);
-                  // println!("Token: {:?}, lo: {:?}, hi: {:?}", token.token, token.span.lo, token.span.hi)
                 }
                 let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: min_token.parse().unwrap(), source_id: format!("{}", entry.path().display()) };
                 detect(&mut tokenmap, &mut store, &mut clones);
@@ -382,16 +378,30 @@ fn main() {
 
   for c in &mut clones {
     let content_a = read_to_string(c.duplication_a.source_id.clone());
-    if let Ok(content) = content_a {
-      let pos = [c.duplication_a.lo.0 as usize, c.duplication_a.hi.0 as usize];
-      let subcontent_a = &content[pos[0]..pos[1]];
-      c.fragement_a(subcontent_a.to_string());
+    match content_a {
+      Ok(content) => {
+        let pos = [c.duplication_a.lo.0 as usize, c.duplication_a.hi.0 as usize];
+        if pos[0] <= pos[1] {
+          let subcontent = &content[pos[0]..pos[1]];
+          c.fragement_a(subcontent.to_string());
+        } else {
+          println!("duplication a {:?}/{:?} {:?}/{:?}", c.duplication_a.source_id, c.duplication_b.source_id, c.duplication_a.lo, c.duplication_a.hi);
+        }
+      },
+      Err(e) => println!("{:?}/{:?}, {}", c.duplication_a.lo, c.duplication_a.hi, e)
     }
     let content_b = read_to_string(c.duplication_b.source_id.clone());
-    if let Ok(content) = content_b {
-      let pos = [c.duplication_b.lo.0 as usize, c.duplication_b.hi.0 as usize];
-      let subcontent_a = &content[pos[0]..pos[1]];
-      c.fragement_b(subcontent_a.to_string());
+    match content_b {
+      Ok(content) => {
+        let pos = [c.duplication_b.lo.0 as usize, c.duplication_b.hi.0 as usize];
+        if pos[0] <= pos[1] {
+          let subcontent = &content[pos[0]..pos[1]];
+          c.fragement_b(subcontent.to_string());
+        } else {
+          println!("duplication b {:?}/{:?} {:?}/{:?}", c.duplication_a.source_id, c.duplication_b.source_id, c.duplication_b.lo, c.duplication_b.hi);
+        }
+      },
+      Err(e) => println!("{:?}/{:?}, {}", c.duplication_b.lo, c.duplication_b.hi, e)
     }
   }
 

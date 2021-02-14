@@ -1,10 +1,10 @@
 const fs = require('fs')
 const path = require('path')
 
-const f1 = fs.readFileSync(path.resolve(__dirname, './file1.ts')).toString()
-const f2 = fs.readFileSync(path.resolve(__dirname, './file2.ts')).toString()
+const f1 = fs.readFileSync("/Users/jiangwei/projects/ruaaa/jscpd/build-utils/prismjs-languages-concat.ts").toString()
+const f2 = fs.readFileSync("/Users/jiangwei/projects/ruaaa/jscpd/examples/server/src/main.ts").toString()
 
 console.warn("f1")
-console.log(f1.slice(0, 2074))
+console.log(f1.slice(217, 273))
 console.warn("f2")
-console.log(f2.slice(2597, 4701))
+console.log(f2.slice(200, 207))
