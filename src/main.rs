@@ -387,15 +387,7 @@ fn main() {
       let subcontent_a = &content[pos[0]..pos[1]];
       c.fragement_b(subcontent_a.to_string());
     }
-    println!("found duplication a {:?} {:?} {:?} {:?}", c.duplication_a.source_id, c.duplication_a.lo, c.duplication_a.hi, c.duplication_a.fragement);
-    println!("found duplication b {:?} {:?} {:?} {:?}", c.duplication_b.source_id, c.duplication_b.lo, c.duplication_b.hi, c.duplication_b.fragement);
   }
 
   save(&clones);
-
-  // println!("Token: {:?}", tokenmap.substring(0, 2));
-  // println!("Token: {:?}", tokenmap.get(0));
-  // println!("Token: {:?}", tokenmap.next().value.id);
-  // println!("Token: {:?}", tokenmap.position);
-  // tokenmap.console();
 }
