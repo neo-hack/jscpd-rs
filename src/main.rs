@@ -302,6 +302,7 @@ fn main() {
         .author("Jiangweixian. <Jiangweixian1994@gmail.com>")
         .about("Does awesome things")
         .arg("-f, --filepath=[FILE] 'Sets a detect file'")
+        .arg("-c, --cwd=[CWD] 'Sets root path'")
         .arg(Arg::new("min_token").short('m').long("min_token").about("Sets min tokens").default_value("2"))
         .get_matches();
 
@@ -311,6 +312,11 @@ fn main() {
   };
 
   let min_token = match matches.value_of("min_token") {
+    Some(f) => f,
+    _ => "",
+  };
+
+  let cwd = match matches.value_of("cwd") {
     Some(f) => f,
     _ => "",
   };
@@ -336,12 +342,12 @@ fn main() {
   //   detect(&mut tokenmap, &mut store, &mut clones);
   // }
 
-  let mut _override_builder = OverrideBuilder::new("./");
+  let mut _override_builder = OverrideBuilder::new(cwd);
   _override_builder.add("**/*.ts");
   _override_builder.add("!node_modules");
   let override_builder = _override_builder.build();
   if let Ok(instance) = override_builder {
-    let mut builder = WalkBuilder::new("./");
+    let mut builder = WalkBuilder::new(cwd);
     builder.overrides(instance);
     builder.standard_filters(true);
     let walk = builder.build();
