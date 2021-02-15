@@ -301,7 +301,7 @@ fn main() {
         .about("Does awesome things")
         .arg("-f, --filepath=[FILE] 'Sets a detect file'")
         .arg("-c, --cwd=[CWD] 'Sets root path'")
-        .arg(Arg::new("min_token").short('m').long("min_token").about("Sets min tokens").default_value("2"))
+        .arg(Arg::new("min_token").short('m').long("min_token").about("Sets min tokens").default_value("50"))
         .get_matches();
 
   let filepath = match matches.value_of("filepath") {
@@ -356,6 +356,7 @@ fn main() {
           Ok(entry) => {
             if let Some(i) = entry.file_type() {
               if !i.is_dir() {
+                files += 1;
                 let tokens = tokensize_with_path(entry.path());
                 let mut str = String::new();
                 for token in &tokens {
@@ -373,8 +374,6 @@ fn main() {
       }
     }
   }
-
-  println!("{}", clones.len());
 
   for c in &mut clones {
     let content_a = read_to_string(c.duplication_a.source_id.clone());
