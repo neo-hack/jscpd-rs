@@ -295,12 +295,12 @@ fn save(clones: &Vec<Clone>) -> std::io::Result<()> {
 }
 
 fn main() {
-  let matches = App::new("myapp")
-        .version("1.0")
+  let matches = App::new("jscpdrs")
+        .version("0.1.0")
         .author("Jiangweixian. <Jiangweixian1994@gmail.com>")
-        .about("Does awesome things")
-        .arg("-f, --filepath=[FILE] 'Sets a detect file'")
-        .arg("-c, --cwd=[CWD] 'Sets root path'")
+        .about("Detect copy/paste in js/ts files")
+        .arg(Arg::new("filepath").short('f').about("Sets a detch file").required(false))
+        .arg(Arg::new("cwd").short('c').long("cwd").about("Sets root path").required(false).default_value("./"))
         .arg(Arg::new("min_token").short('m').long("min_token").about("Sets min tokens").default_value("50"))
         .get_matches();
 
@@ -356,7 +356,6 @@ fn main() {
           Ok(entry) => {
             if let Some(i) = entry.file_type() {
               if !i.is_dir() {
-                files += 1;
                 let tokens = tokensize_with_path(entry.path());
                 let mut str = String::new();
                 for token in &tokens {
