@@ -1,24 +1,23 @@
+extern crate crypto;
 extern crate swc_common;
 extern crate swc_ecma_parser;
-extern crate crypto;
-use serde::{Deserialize, Serialize};
-use serde_json;
-use std::io::prelude::*;
-use std::fs::{File, read_to_string};
-use std::cmp::min;
+use clap::{App, Arg};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
-use std::format;
+use ignore::overrides::OverrideBuilder;
+use ignore::WalkBuilder;
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::cmp::min;
 use std::collections::HashMap;
+use std::format;
+use std::fs::{read_to_string, File};
+use std::io::prelude::*;
 use std::path::Path;
-use clap::{Arg, App};
-use ignore::{WalkBuilder};
-use ignore::overrides::{OverrideBuilder};
 use swc_common::{
   errors::{ColorConfig, Handler},
   sync::Lrc,
-  FileName, SourceMap,
-  Span, BytePos
+  BytePos, FileName, SourceMap, Span,
 };
 use swc_ecma_parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax, TsConfig};
 
@@ -44,7 +43,7 @@ impl CloneLoc {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct Clone {
   duplication_a: CloneLoc,
-  duplication_b: CloneLoc
+  duplication_b: CloneLoc,
 }
 
 impl Clone {
@@ -71,7 +70,7 @@ struct TokenItemValue {
 #[derive(Debug, Clone)]
 struct TokenItem {
   done: bool,
-  value: TokenItemValue
+  value: TokenItemValue,
 }
 
 struct TokenMap {
@@ -79,7 +78,7 @@ struct TokenMap {
   str: String,
   source_id: String,
   position: usize,
-  min_token: usize
+  min_token: usize,
 }
 
 impl TokenMap {
@@ -106,18 +105,18 @@ impl TokenMap {
     let start = istart * 32;
     let end = iend * 32;
     let start_loc = match self.get(istart) {
-      Some(item) => Some(item.span), 
+      Some(item) => Some(item.span),
       _ => None,
     };
     let end_loc = match self.get(iend) {
-      Some(item) => Some(item.span), 
+      Some(item) => Some(item.span),
       _ => None,
     };
     let value = TokenItemValue {
       id: self.substring(start, end).to_string(),
       start: start_loc,
       source_id: self.source_id.clone(),
-      end: end_loc
+      end: end_loc,
     };
     let mut last_pos = 1;
     if self.size() > self.min_token {
@@ -125,20 +124,18 @@ impl TokenMap {
     }
     if self.position < last_pos {
       self.position = self.position + 1;
-      TokenItem {
-        done: false,
-        value,
-      }
+      TokenItem { done: false, value }
     } else {
-      TokenItem {
-        done: true,
-        value,
-      }
+      TokenItem { done: true, value }
     }
   }
 }
 
-fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clones: &mut Vec<Clone>) {
+fn detect(
+  tokenmap: &mut TokenMap,
+  store: &mut HashMap<String, TokenItem>,
+  clones: &mut Vec<Clone>,
+) {
   let mut saved: Option<BytePos> = None;
   let mut clone: Option<Clone> = None;
   loop {
@@ -154,33 +151,33 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
           // clone found first time
           None => {
             let duplication_a_lo = match v.value.start {
-              Some(item) => {
-                item.lo
-              },
+              Some(item) => item.lo,
               _ => BytePos(0),
             };
             let duplication_a_hi = match v.value.end {
-              Some(item) => {
-                item.hi
-              },
+              Some(item) => item.hi,
               _ => BytePos(0),
             };
             let duplication_b_lo = match item.value.start {
-              Some(item) => {
-                item.lo
-              },
+              Some(item) => item.lo,
               _ => BytePos(0),
             };
             let duplication_b_hi = match item.value.end {
-              Some(item) => {
-                item.hi
-              },
+              Some(item) => item.hi,
               _ => BytePos(0),
             };
-            let duplication_a = CloneLoc::new(v.value.source_id.to_string(), duplication_a_lo, duplication_a_hi);
-            let duplication_b = CloneLoc::new(item.value.source_id, duplication_b_lo, duplication_b_hi);
-            clone = Some(Clone { duplication_a, duplication_b });
-          },
+            let duplication_a = CloneLoc::new(
+              v.value.source_id.to_string(),
+              duplication_a_lo,
+              duplication_a_hi,
+            );
+            let duplication_b =
+              CloneLoc::new(item.value.source_id, duplication_b_lo, duplication_b_hi);
+            clone = Some(Clone {
+              duplication_a,
+              duplication_b,
+            });
+          }
           Some(_) => (),
         }
       }
@@ -200,11 +197,6 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
       }
     }
     if done == true {
-      // if let Some(ref mut c) = clone {
-      //   if saved.is_some() {
-      //     c.enlarge(saved.unwrap(), hi);
-      //   }
-      // }
       // save clone
       match clone {
         Some(item) => {
@@ -212,7 +204,7 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
         }
         _ => (),
       }
-      break
+      break;
     } else {
       if let Some(ref mut c) = clone {
         if saved.is_some() {
@@ -226,16 +218,13 @@ fn detect(tokenmap: &mut TokenMap, store: &mut HashMap<String, TokenItem>, clone
 fn tokensize_with_str(input: String) -> std::vec::Vec<swc_ecma_parser::token::TokenAndSpan> {
   let cm: Lrc<SourceMap> = Default::default();
   let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
-  let fm = cm.new_source_file(
-    FileName::Custom("test.js".into()),
-    input,
-  );
+  let fm = cm.new_source_file(FileName::Custom("test.js".into()), input);
 
   let lexer = Lexer::new(
-      Syntax::Es(Default::default()),
-      Default::default(),
-      StringInput::from(&*fm),
-      None,
+    Syntax::Es(Default::default()),
+    Default::default(),
+    StringInput::from(&*fm),
+    None,
   );
 
   let capturing = Capturing::new(lexer);
@@ -243,13 +232,13 @@ fn tokensize_with_str(input: String) -> std::vec::Vec<swc_ecma_parser::token::To
   let mut parser = Parser::new_from(capturing);
 
   for e in parser.take_errors() {
-      e.into_diagnostic(&handler).emit();
+    e.into_diagnostic(&handler).emit();
   }
 
   let _module = parser
-      .parse_module()
-      .map_err(|e| e.into_diagnostic(&handler).emit())
-      .expect("Failed to parse module.");
+    .parse_module()
+    .map_err(|e| e.into_diagnostic(&handler).emit())
+    .expect("Failed to parse module.");
 
   let tokens = parser.input().take();
   tokens
@@ -259,15 +248,20 @@ fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::token:
   let cm: Lrc<SourceMap> = Default::default();
   let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
 
-  let fm = cm
-      .load_file(filepath)
-      .expect("failed to load test.js");
+  let fm = cm.load_file(filepath).expect("failed to load test.js");
 
   let lexer = Lexer::new(
-      Syntax::Typescript(TsConfig { tsx: true, dts: false, decorators: true, dynamic_import: true, import_assertions: true, no_early_errors: true }),
-      Default::default(),
-      StringInput::from(&*fm),
-      None,
+    Syntax::Typescript(TsConfig {
+      tsx: true,
+      dts: false,
+      decorators: true,
+      dynamic_import: true,
+      import_assertions: true,
+      no_early_errors: true,
+    }),
+    Default::default(),
+    StringInput::from(&*fm),
+    None,
   );
 
   let capturing = Capturing::new(lexer);
@@ -275,13 +269,13 @@ fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::token:
   let mut parser = Parser::new_from(capturing);
 
   for e in parser.take_errors() {
-      e.into_diagnostic(&handler).emit();
+    e.into_diagnostic(&handler).emit();
   }
 
   let _module = parser
-      .parse_module()
-      .map_err(|e| e.into_diagnostic(&handler).emit())
-      .expect("Failed to parse module.");
+    .parse_module()
+    .map_err(|e| e.into_diagnostic(&handler).emit())
+    .expect("Failed to parse module.");
 
   let tokens = parser.input().take();
   tokens
@@ -296,13 +290,31 @@ fn save(clones: &Vec<Clone>) -> std::io::Result<()> {
 
 fn main() {
   let matches = App::new("jscpdrs")
-        .version("0.1.0")
-        .author("Jiangweixian. <Jiangweixian1994@gmail.com>")
-        .about("Detect copy/paste in js/ts files")
-        .arg(Arg::new("filepath").short('f').about("Sets a detch file").required(false))
-        .arg(Arg::new("cwd").short('c').long("cwd").about("Sets root path").required(false).default_value("./"))
-        .arg(Arg::new("min_token").short('m').long("min_token").about("Sets min tokens").default_value("50"))
-        .get_matches();
+    .version("0.1.0")
+    .author("Jiangweixian. <Jiangweixian1994@gmail.com>")
+    .about("Detect copy/paste in js/ts files")
+    .arg(
+      Arg::new("filepath")
+        .short('f')
+        .about("Sets a detch file")
+        .required(false),
+    )
+    .arg(
+      Arg::new("cwd")
+        .short('c')
+        .long("cwd")
+        .about("Sets root path")
+        .required(false)
+        .default_value("./"),
+    )
+    .arg(
+      Arg::new("min_token")
+        .short('m')
+        .long("min_token")
+        .about("Sets min tokens")
+        .default_value("50"),
+    )
+    .get_matches();
 
   let filepath = match matches.value_of("filepath") {
     Some(f) => f,
@@ -353,23 +365,29 @@ fn main() {
       // Each item yielded by the iterator is either a directory entry or an
       // error, so either print the path or the error.
       match result {
-          Ok(entry) => {
-            if let Some(i) = entry.file_type() {
-              if !i.is_dir() {
-                let tokens = tokensize_with_path(entry.path());
-                let mut str = String::new();
-                for token in &tokens {
-                  md5.reset();
-                  md5.input_str(&format!("{:?}", token.token));
-                  let hash = md5.result_str();
-                  str.push_str(&hash);
-                }
-                let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: min_token.parse().unwrap(), source_id: format!("{}", entry.path().display()) };
-                detect(&mut tokenmap, &mut store, &mut clones);
+        Ok(entry) => {
+          if let Some(i) = entry.file_type() {
+            if !i.is_dir() {
+              let tokens = tokensize_with_path(entry.path());
+              let mut str = String::new();
+              for token in &tokens {
+                md5.reset();
+                md5.input_str(&format!("{:?}", token.token));
+                let hash = md5.result_str();
+                str.push_str(&hash);
               }
-            };
-          },
-          Err(err) => println!("ERROR: {}", err),
+              let mut tokenmap = TokenMap {
+                tokens,
+                str,
+                position: 0,
+                min_token: min_token.parse().unwrap(),
+                source_id: format!("{}", entry.path().display()),
+              };
+              detect(&mut tokenmap, &mut store, &mut clones);
+            }
+          };
+        }
+        Err(err) => println!("ERROR: {}", err),
       }
     }
   }
@@ -383,10 +401,16 @@ fn main() {
           let subcontent = &content[pos[0]..pos[1]];
           c.fragement_a(subcontent.to_string());
         } else {
-          println!("duplication a {:?}/{:?} {:?}/{:?}", c.duplication_a.source_id, c.duplication_b.source_id, c.duplication_a.lo, c.duplication_a.hi);
+          println!(
+            "duplication a {:?}/{:?} {:?}/{:?}",
+            c.duplication_a.source_id,
+            c.duplication_b.source_id,
+            c.duplication_a.lo,
+            c.duplication_a.hi
+          );
         }
-      },
-      Err(e) => println!("{:?}/{:?}, {}", c.duplication_a.lo, c.duplication_a.hi, e)
+      }
+      Err(e) => println!("{:?}/{:?}, {}", c.duplication_a.lo, c.duplication_a.hi, e),
     }
     let content_b = read_to_string(c.duplication_b.source_id.clone());
     match content_b {
@@ -396,10 +420,16 @@ fn main() {
           let subcontent = &content[pos[0]..pos[1]];
           c.fragement_b(subcontent.to_string());
         } else {
-          println!("duplication b {:?}/{:?} {:?}/{:?}", c.duplication_a.source_id, c.duplication_b.source_id, c.duplication_b.lo, c.duplication_b.hi);
+          println!(
+            "duplication b {:?}/{:?} {:?}/{:?}",
+            c.duplication_a.source_id,
+            c.duplication_b.source_id,
+            c.duplication_b.lo,
+            c.duplication_b.hi
+          );
         }
-      },
-      Err(e) => println!("{:?}/{:?}, {}", c.duplication_b.lo, c.duplication_b.hi, e)
+      }
+      Err(e) => println!("{:?}/{:?}, {}", c.duplication_b.lo, c.duplication_b.hi, e),
     }
   }
 
