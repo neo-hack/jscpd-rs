@@ -131,3 +131,6 @@ dist
 
 # project cache
 result.json
+
+# macos
+.DS_Store
