@@ -14,12 +14,13 @@ use std::format;
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 use std::path::Path;
+use std::ffi::OsStr;
 use swc_common::{
   errors::{ColorConfig, Handler},
   sync::Lrc,
   BytePos, FileName, SourceMap, Span,
 };
-use swc_ecma_parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax, TsConfig};
+use swc_ecma_parser::{lexer::Lexer, Capturing, EsConfig, Parser, StringInput, Syntax, TsConfig};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct CloneLoc {
@@ -248,21 +249,51 @@ fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::token:
   let cm: Lrc<SourceMap> = Default::default();
   let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
 
-  let fm = cm.load_file(filepath).expect("failed to load test.js");
+  let fm = cm
+    .load_file(filepath)
+    .expect(&format!("failed to load {}", filepath.display()));
 
-  let lexer = Lexer::new(
-    Syntax::Typescript(TsConfig {
-      tsx: true,
-      dts: false,
-      decorators: true,
-      dynamic_import: true,
-      import_assertions: true,
-      no_early_errors: true,
-    }),
-    Default::default(),
-    StringInput::from(&*fm),
-    None,
-  );
+  let lexer;
+
+  if filepath.ends_with("jsx") || filepath.ends_with("js") {
+    lexer = Lexer::new(
+      Syntax::Es(EsConfig {
+        jsx: true,
+        class_private_props: true,
+        class_private_methods: true,
+        class_props: true,
+        fn_bind: true,
+        decorators: true,
+        decorators_before_export: true,
+        export_default_from: true,
+        dynamic_import: true,
+        export_namespace_from: true,
+        import_assertions: true,
+        import_meta: true,
+        top_level_await: true,
+        nullish_coalescing: false,
+        num_sep: false,
+        optional_chaining: false,
+      }),
+      Default::default(),
+      StringInput::from(&*fm),
+      None,
+    );
+  } else {
+    lexer = Lexer::new(
+      Syntax::Typescript(TsConfig {
+        tsx: true,
+        dts: false,
+        decorators: true,
+        dynamic_import: true,
+        import_assertions: true,
+        no_early_errors: true,
+      }),
+      Default::default(),
+      StringInput::from(&*fm),
+      None,
+    );
+  }
 
   let capturing = Capturing::new(lexer);
 
@@ -284,7 +315,7 @@ fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::token:
 fn save(clones: &Vec<Clone>) -> std::io::Result<()> {
   let content = serde_json::to_string(clones)?;
   let mut file = File::create("result.json")?;
-  file.write_all(content.as_bytes());
+  file.write_all(content.as_bytes())?;
   Ok(())
 }
 
@@ -333,7 +364,7 @@ fn main() {
 
   let mut md5 = Md5::new();
 
-  let mut store: HashMap<String, TokenItem> = HashMap::new();
+  let mut stores: HashMap<String, HashMap<String, TokenItem>> = HashMap::new();
   let mut clones: Vec<Clone> = Vec::new();
 
   // detect with file content
@@ -354,6 +385,9 @@ fn main() {
 
   let mut _override_builder = OverrideBuilder::new(cwd);
   _override_builder.add("**/*.ts");
+  _override_builder.add("**/*.tsx");
+  _override_builder.add("**/*.jsx");
+  _override_builder.add("**/*.js");
   _override_builder.add("!node_modules");
   let override_builder = _override_builder.build();
   if let Ok(instance) = override_builder {
@@ -383,7 +417,16 @@ fn main() {
                 min_token: min_token.parse().unwrap(),
                 source_id: format!("{}", entry.path().display()),
               };
-              detect(&mut tokenmap, &mut store, &mut clones);
+              let ext = entry.path().extension().and_then(OsStr::to_str).unwrap();
+              let _store = stores.get(ext);
+              match _store {
+                Some(_) => (),
+                None => {
+                  stores.insert(ext.to_string(), HashMap::new());
+                },
+              }
+              let store = stores.get_mut(ext).unwrap();
+              detect(&mut tokenmap, store, &mut clones);
             }
           };
         }
@@ -398,7 +441,9 @@ fn main() {
       Ok(content) => {
         let pos = [c.duplication_a.lo.0 as usize, c.duplication_a.hi.0 as usize];
         if pos[0] <= pos[1] {
-          let subcontent = &content[pos[0]..pos[1]];
+          let start = pos[0];
+          let end = min(pos[1], content.len());
+          let subcontent = &content[start..end];
           c.fragement_a(subcontent.to_string());
         } else {
           println!(
@@ -417,7 +462,9 @@ fn main() {
       Ok(content) => {
         let pos = [c.duplication_b.lo.0 as usize, c.duplication_b.hi.0 as usize];
         if pos[0] <= pos[1] {
-          let subcontent = &content[pos[0]..pos[1]];
+          let start = pos[0];
+          let end = min(pos[1], content.len());
+          let subcontent = &content[start..end];
           c.fragement_b(subcontent.to_string());
         } else {
           println!(
