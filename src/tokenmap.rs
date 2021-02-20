@@ -51,10 +51,30 @@ pub struct TokenItemValue {
   pub end: Option<Span>,
 }
 
+impl Default for TokenItemValue {
+  fn default() -> TokenItemValue {
+    TokenItemValue {
+      id: String::from(""),
+      source_id: String::from(""),
+      start: None,
+      end: None
+    }
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct TokenItem {
   pub done: bool,
   pub value: TokenItemValue,
+}
+
+impl Default for TokenItem {
+  fn default() -> TokenItem {
+    TokenItem {
+      done: true,
+      value: TokenItemValue::default(),
+    }
+  }
 }
 
 pub struct TokenMap {
@@ -84,33 +104,55 @@ impl TokenMap {
     self.tokens.get(index)
   }
   pub fn next(&mut self) -> TokenItem {
-    let istart = min(self.position, self.size() - 1);
-    let iend = min(self.position + self.min_token, self.size() - 1);
-    let start = istart * 32;
-    let end = iend * 32;
-    let start_loc = match self.get(istart) {
-      Some(item) => Some(item.span),
-      _ => None,
-    };
-    let end_loc = match self.get(iend) {
-      Some(item) => Some(item.span),
-      _ => None,
-    };
-    let value = TokenItemValue {
-      id: self.substring(start, end).to_string(),
-      start: start_loc,
-      source_id: self.source_id.clone(),
-      end: end_loc,
-    };
-    let mut last_pos = 1;
-    if self.size() > self.min_token {
-      last_pos = self.size() - self.min_token;
-    }
-    if self.position < last_pos {
-      self.position = self.position + 1;
-      TokenItem { done: false, value }
+    if self.size() == 0 {
+      TokenItem::default()
     } else {
-      TokenItem { done: true, value }
+      let istart = min(self.position, self.size() - 1);
+      let iend = min(self.position + self.min_token, self.size() - 1);
+      let start = istart * 32;
+      let end = iend * 32;
+      let start_loc = match self.get(istart) {
+        Some(item) => Some(item.span),
+        _ => None,
+      };
+      let end_loc = match self.get(iend) {
+        Some(item) => Some(item.span),
+        _ => None,
+      };
+      let value = TokenItemValue {
+        id: self.substring(start, end).to_string(),
+        start: start_loc,
+        source_id: self.source_id.clone(),
+        end: end_loc,
+      };
+      let mut last_pos = 1;
+      if self.size() > self.min_token {
+        last_pos = self.size() - self.min_token;
+      }
+      if self.position < last_pos {
+        self.position = self.position + 1;
+        TokenItem { done: false, value }
+      } else {
+        TokenItem { done: true, value }
+      }
     }
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use crate::tokenmap::TokenMap;
+
+  #[test]
+  // next on empty tokens map should work fine
+  fn empty_tokens() {
+    let mut tokenmap = TokenMap {
+      tokens: Vec::new(),
+      str: String::from("../examples/javascript/file1.js"),
+      position: 0,
+      min_token: 50,
+      source_id: String::from("../examples/javascript/file1.js"),
+    };
+    tokenmap.next();
   }
 }

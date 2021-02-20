@@ -97,9 +97,20 @@ pub fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::to
 
   let _module = parser
     .parse_module()
-    .map_err(|e| e.into_diagnostic(&handler).emit())
-    .expect("Failed to parse module.");
+    .map_err(|e| e.into_diagnostic(&handler).emit());
 
   let tokens = parser.input().take();
   tokens
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::tokensize_with_path;
+  use std::path::Path;
+
+  #[test]
+  // parse unsupport syntax should work fine
+  fn unsupport_syntax() {
+    tokensize_with_path(Path::new("examples/javascript/error_typescript.ts"));
+  }
 }
