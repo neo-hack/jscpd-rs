@@ -1,0 +1,3 @@
+interface Sometype {
+  field?: string[] = []
+}
