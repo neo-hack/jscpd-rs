@@ -111,6 +111,42 @@ mod tests {
   #[test]
   // parse unsupport syntax should work fine
   fn unsupport_syntax() {
-    tokensize_with_path(Path::new("examples/javascript/error_typescript.ts"));
+    let tokens = tokensize_with_path(Path::new("examples/javascript/error_typescript.ts"));
+    assert_ne!(tokens.len(), 0);
+  }
+
+  #[test]
+  // parse empty file should return empty vec
+  fn empty_file() {
+    let tokens = tokensize_with_path(Path::new("examples/javascript/empty_file.ts"));
+    assert_eq!(tokens.len(), 0);
+  }
+
+  #[test]
+  // parse js file should work
+  fn parse_js() {
+    let tokens = tokensize_with_path(Path::new("examples/javascript/file_1.js"));
+    assert_ne!(tokens.len(), 0);
+  }
+
+  #[test]
+  // parse jsx file should work
+  fn parse_jsx() {
+    let tokens = tokensize_with_path(Path::new("examples/jsx/file1.jsx"));
+    assert_ne!(tokens.len(), 0);
+  }
+
+  #[test]
+  // parse ts file should work
+  fn parse_ts() {
+    let tokens = tokensize_with_path(Path::new("examples/javascript/lohi.ts"));
+    assert_ne!(tokens.len(), 0);
+  }
+
+  #[test]
+  // parse tsx file should work
+  fn parse_tsx() {
+    let tokens = tokensize_with_path(Path::new("examples/jsx/file1.tsx"));
+    assert_ne!(tokens.len(), 0);
   }
 }
