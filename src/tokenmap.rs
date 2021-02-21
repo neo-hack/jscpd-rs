@@ -1,9 +1,7 @@
 extern crate swc_common;
 use serde::{Deserialize, Serialize};
 use std::cmp::min;
-use swc_common::{
-  BytePos, Span,
-};
+use swc_common::{BytePos, Span};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct CloneLoc {
@@ -57,7 +55,7 @@ impl Default for TokenItemValue {
       id: String::from(""),
       source_id: String::from(""),
       start: None,
-      end: None
+      end: None,
     }
   }
 }

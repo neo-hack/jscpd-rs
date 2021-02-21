@@ -1,11 +1,9 @@
 extern crate crypto;
 extern crate swc_common;
 use std::collections::HashMap;
-use swc_common::{
-  BytePos,
-};
+use swc_common::BytePos;
 
-use crate::tokenmap::{TokenMap, TokenItem, Clone, CloneLoc};
+use crate::tokenmap::{Clone, CloneLoc, TokenItem, TokenMap};
 
 pub fn detect(
   tokenmap: &mut TokenMap,

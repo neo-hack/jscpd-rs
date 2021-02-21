@@ -7,15 +7,15 @@ use ignore::WalkBuilder;
 use serde_json;
 use std::cmp::min;
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::format;
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
-use std::ffi::OsStr;
 
 mod tokenmap;
-use tokenmap::{TokenMap, TokenItem, Clone};
+use tokenmap::{Clone, TokenItem, TokenMap};
 mod parse;
-use parse::{tokensize_with_path};
+use parse::tokensize_with_path;
 mod detect;
 use detect::detect;
 
@@ -114,7 +114,7 @@ fn main() {
                 Some(_) => (),
                 None => {
                   stores.insert(ext.to_string(), HashMap::new());
-                },
+                }
               }
               let store = stores.get_mut(ext).unwrap();
               detect(&mut tokenmap, store, &mut clones);

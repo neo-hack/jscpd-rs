@@ -1,0 +1,31 @@
+{
+  "name": "jscpd-rs",
+  "version": "0.1.0",
+  "description": "detect copy paste in js/jsx/ts/tsx files",
+  "main": "index.js",
+  "devDependencies": {
+    "husky": "^4.3.8"
+  },
+  "scripts": {
+    "test": "cargo test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spring-catponents/jscpd-rs.git"
+  },
+  "keywords": [
+    "jscpd",
+    "rust"
+  ],
+  "husky": {
+    "hooks": {
+      "pre-commit": "cargo fmt"
+    }
+  },
+  "author": "JW",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/spring-catponents/jscpd-rs/issues"
+  },
+  "homepage": "https://github.com/spring-catponents/jscpd-rs#readme"
+}

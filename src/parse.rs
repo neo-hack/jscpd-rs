@@ -4,7 +4,7 @@ use std::path::Path;
 use swc_common::{
   errors::{ColorConfig, Handler},
   sync::Lrc,
-   FileName, SourceMap,
+  FileName, SourceMap,
 };
 use swc_ecma_parser::{lexer::Lexer, Capturing, EsConfig, Parser, StringInput, Syntax, TsConfig};
 
