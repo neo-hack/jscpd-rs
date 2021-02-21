@@ -86,19 +86,12 @@ pub struct TokenMap {
 }
 
 impl TokenMap {
-  pub fn console(&self) {
-    println!("Tokens: {:?}", self.str);
-  }
   pub fn substring(&self, start: usize, end: usize) -> &str {
     &self.str[start..end]
   }
   // token length
   pub fn size(&self) -> usize {
     self.tokens.len()
-  }
-  // token hash map length
-  pub fn len(&self) -> usize {
-    self.str.len()
   }
   pub fn get(&self, index: usize) -> std::option::Option<&swc_ecma_parser::token::TokenAndSpan> {
     self.tokens.get(index)

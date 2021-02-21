@@ -8,6 +8,7 @@ use swc_common::{
 };
 use swc_ecma_parser::{lexer::Lexer, Capturing, EsConfig, Parser, StringInput, Syntax, TsConfig};
 
+#[allow(dead_code)]
 pub fn tokensize_with_str(input: String) -> std::vec::Vec<swc_ecma_parser::token::TokenAndSpan> {
   let cm: Lrc<SourceMap> = Default::default();
   let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
