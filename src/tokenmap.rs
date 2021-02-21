@@ -63,6 +63,7 @@ impl Default for TokenItemValue {
 #[derive(Debug, Clone)]
 pub struct TokenItem {
   pub done: bool,
+  pub skip: bool,
   pub value: TokenItemValue,
 }
 
@@ -70,6 +71,7 @@ impl Default for TokenItem {
   fn default() -> TokenItem {
     TokenItem {
       done: true,
+      skip: true,
       value: TokenItemValue::default(),
     }
   }
@@ -122,9 +124,17 @@ impl TokenMap {
       }
       if self.position < last_pos {
         self.position = self.position + 1;
-        TokenItem { done: false, value }
+        TokenItem {
+          done: false,
+          skip: false,
+          value,
+        }
       } else {
-        TokenItem { done: true, value }
+        TokenItem {
+          done: true,
+          skip: false,
+          value,
+        }
       }
     }
   }
@@ -144,6 +154,7 @@ mod test {
       min_token: 50,
       source_id: String::from("../examples/javascript/file1.js"),
     };
-    tokenmap.next();
+    let item = tokenmap.next();
+    assert_eq!(item.skip, true);
   }
 }

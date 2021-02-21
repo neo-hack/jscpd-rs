@@ -1,11 +1,104 @@
 extern crate crypto;
 extern crate swc_common;
+use crypto::digest::Digest;
+use crypto::md5::Md5;
+use ignore::overrides::OverrideBuilder;
+use ignore::WalkBuilder;
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use swc_common::BytePos;
 
 use crate::tokenmap::{Clone, CloneLoc, TokenItem, TokenMap};
+use crate::tokensize_with_path;
 
-pub fn detect(
+pub struct Detector {
+  stores: HashMap<String, HashMap<String, TokenItem>>,
+  md5: Md5,
+  pub clones: Vec<Clone>,
+  pub min_token: usize,
+}
+
+impl Default for Detector {
+  fn default() -> Detector {
+    Detector {
+      md5: Md5::new(),
+      stores: HashMap::new(),
+      clones: Vec::new(),
+      min_token: 50,
+    }
+  }
+}
+
+pub struct DetectorConfig {
+  pub min_token: usize,
+}
+
+impl Detector {
+  pub fn new(config: DetectorConfig) -> Detector {
+    Detector {
+      md5: Md5::new(),
+      stores: HashMap::new(),
+      clones: Vec::new(),
+      min_token: config.min_token,
+      ..Default::default()
+    }
+  }
+  pub fn detect_files(&mut self, cwd: &str) {
+    let mut _override_builder = OverrideBuilder::new(cwd);
+    _override_builder.add("**/*.ts").unwrap();
+    _override_builder.add("**/*.tsx").unwrap();
+    _override_builder.add("**/*.jsx").unwrap();
+    _override_builder.add("**/*.js").unwrap();
+    _override_builder.add("!node_modules").unwrap();
+    let override_builder = _override_builder.build();
+    if let Ok(instance) = override_builder {
+      let mut builder = WalkBuilder::new(cwd);
+      builder.overrides(instance);
+      builder.standard_filters(true);
+      let walk = builder.build();
+      for result in walk {
+        // Each item yielded by the iterator is either a directory entry or an
+        // error, so either print the path or the error.
+        match result {
+          Ok(entry) => {
+            if let Some(i) = entry.file_type() {
+              if !i.is_dir() {
+                let tokens = tokensize_with_path(entry.path());
+                let mut str = String::new();
+                for token in &tokens {
+                  self.md5.reset();
+                  self.md5.input_str(&format!("{:?}", token.token));
+                  let hash = self.md5.result_str();
+                  str.push_str(&hash);
+                }
+                let mut tokenmap = TokenMap {
+                  tokens,
+                  str,
+                  position: 0,
+                  min_token: self.min_token,
+                  source_id: format!("{}", entry.path().display()),
+                };
+                let ext = entry.path().extension().and_then(OsStr::to_str).unwrap();
+                let _store = self.stores.get(ext);
+                match _store {
+                  Some(_) => (),
+                  None => {
+                    self.stores.insert(ext.to_string(), HashMap::new());
+                  }
+                }
+                let store = self.stores.get_mut(ext).unwrap();
+                detect(&mut tokenmap, store, &mut self.clones);
+              }
+            };
+          }
+          Err(err) => println!("ERROR: {}", err),
+        }
+      }
+    }
+  }
+}
+
+fn detect(
   tokenmap: &mut TokenMap,
   store: &mut HashMap<String, TokenItem>,
   clones: &mut Vec<Clone>,
@@ -14,6 +107,10 @@ pub fn detect(
   let mut clone: Option<Clone> = None;
   loop {
     let item = tokenmap.next();
+    let skip = item.skip;
+    if skip == true {
+      break;
+    }
     let hi = item.value.end.unwrap().hi;
     let value = store.get(&item.value.id);
     let done = item.done;
