@@ -30,7 +30,7 @@ fn main() {
   let matches = App::new("jscpdrs")
     .version("0.1.0")
     .author("Jiangweixian. <Jiangweixian1994@gmail.com>")
-    .about("Detect copy/paste in js/ts files")
+    .about("Detect copy/paste in js/jsx/ts/tsx files")
     .arg(
       Arg::new("filepath")
         .short('f')
@@ -54,7 +54,7 @@ fn main() {
     )
     .get_matches();
 
-  let filepath = match matches.value_of("filepath") {
+  let _filepath = match matches.value_of("filepath") {
     Some(f) => f,
     _ => "",
   };
@@ -74,28 +74,12 @@ fn main() {
   let mut stores: HashMap<String, HashMap<String, TokenItem>> = HashMap::new();
   let mut clones: Vec<Clone> = Vec::new();
 
-  // detect with file content
-  // let times = [String::from("function foo() {} function foo() {}"), String::from("function foo() {}")];
-  // for time in &times {
-  //   let tokens = tokensize_with_str(time.into());
-  //   let mut str = String::new();
-  //   for token in &tokens {
-  //     md5.input_str(&format!("{:?}", token.token));
-  //     let hash = md5.result_str();
-  //     md5.reset();
-  //     str.push_str(&hash);
-  //     // println!("Token: {:?}, lo: {:?}, hi: {:?}", token.token, token.span.lo, token.span.hi)
-  //   }
-  //   let mut tokenmap = TokenMap { tokens, str, position: 0, min_token: 2 };
-  //   detect(&mut tokenmap, &mut store, &mut clones);
-  // }
-
   let mut _override_builder = OverrideBuilder::new(cwd);
-  _override_builder.add("**/*.ts");
-  _override_builder.add("**/*.tsx");
-  _override_builder.add("**/*.jsx");
-  _override_builder.add("**/*.js");
-  _override_builder.add("!node_modules");
+  _override_builder.add("**/*.ts").unwrap();
+  _override_builder.add("**/*.tsx").unwrap();
+  _override_builder.add("**/*.jsx").unwrap();
+  _override_builder.add("**/*.js").unwrap();
+  _override_builder.add("!node_modules").unwrap();
   let override_builder = _override_builder.build();
   if let Ok(instance) = override_builder {
     let mut builder = WalkBuilder::new(cwd);
@@ -187,5 +171,5 @@ fn main() {
     }
   }
 
-  save(&clones);
+  save(&clones).unwrap();
 }
