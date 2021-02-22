@@ -1,8 +1,7 @@
 extern crate crypto;
 use clap::{App, Arg};
 use serde_json;
-use std::cmp::min;
-use std::fs::{read_to_string, File};
+use std::fs::{File};
 use std::io::prelude::*;
 
 mod tokenmap;
@@ -66,51 +65,6 @@ fn main() {
     min_token: min_token.parse().unwrap(),
   });
   detector.detect_files(cwd);
-
-  for c in &mut detector.clones {
-    let content_a = read_to_string(c.duplication_a.source_id.clone());
-    match content_a {
-      Ok(content) => {
-        let pos = [c.duplication_a.lo.0 as usize, c.duplication_a.hi.0 as usize];
-        if pos[0] <= pos[1] {
-          let start = pos[0];
-          let end = min(pos[1], content.len());
-          let subcontent = &content[start..end];
-          c.fragement_a(subcontent.to_string());
-        } else {
-          println!(
-            "duplication a {:?}/{:?} {:?}/{:?}",
-            c.duplication_a.source_id,
-            c.duplication_b.source_id,
-            c.duplication_a.lo,
-            c.duplication_a.hi
-          );
-        }
-      }
-      Err(e) => println!("{:?}/{:?}, {}", c.duplication_a.lo, c.duplication_a.hi, e),
-    }
-    let content_b = read_to_string(c.duplication_b.source_id.clone());
-    match content_b {
-      Ok(content) => {
-        let pos = [c.duplication_b.lo.0 as usize, c.duplication_b.hi.0 as usize];
-        if pos[0] <= pos[1] {
-          let start = pos[0];
-          let end = min(pos[1], content.len());
-          let subcontent = &content[start..end];
-          c.fragement_b(subcontent.to_string());
-        } else {
-          println!(
-            "duplication b {:?}/{:?} {:?}/{:?}",
-            c.duplication_a.source_id,
-            c.duplication_b.source_id,
-            c.duplication_b.lo,
-            c.duplication_b.hi
-          );
-        }
-      }
-      Err(e) => println!("{:?}/{:?}, {}", c.duplication_b.lo, c.duplication_b.hi, e),
-    }
-  }
 
   save(&detector.clones).unwrap();
 }

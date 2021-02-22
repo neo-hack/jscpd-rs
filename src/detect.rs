@@ -6,6 +6,8 @@ use ignore::overrides::OverrideBuilder;
 use ignore::WalkBuilder;
 use std::collections::HashMap;
 use std::ffi::OsStr;
+use std::cmp::min;
+use std::fs::{read_to_string};
 use swc_common::BytePos;
 
 use crate::tokenmap::{Clone, CloneLoc, TokenItem, TokenMap};
@@ -43,6 +45,7 @@ impl Detector {
       ..Default::default()
     }
   }
+  
   pub fn detect_files(&mut self, cwd: &str) {
     let mut _override_builder = OverrideBuilder::new(cwd);
     _override_builder.add("**/*.ts").unwrap();
@@ -94,8 +97,56 @@ impl Detector {
           Err(err) => println!("ERROR: {}", err),
         }
       }
-    }
+    };
+    self.fragment();
   }
+  // slice content into duplication fragment
+  fn fragment(&mut self) {
+    for c in &mut self.clones {
+      let content_a = read_to_string(c.duplication_a.source_id.clone());
+      match content_a {
+        Ok(content) => {
+          let pos = [c.duplication_a.lo.0 as usize, c.duplication_a.hi.0 as usize];
+          if pos[0] <= pos[1] {
+            let start = pos[0];
+            let end = min(pos[1], content.len());
+            let subcontent = &content[start..end];
+            c.fragement_a(subcontent.to_string());
+          } else {
+            println!(
+              "duplication a {:?}/{:?} {:?}/{:?}",
+              c.duplication_a.source_id,
+              c.duplication_b.source_id,
+              c.duplication_a.lo,
+              c.duplication_a.hi
+            );
+          }
+        }
+        Err(e) => println!("{:?}/{:?}, {}", c.duplication_a.lo, c.duplication_a.hi, e),
+      }
+      let content_b = read_to_string(c.duplication_b.source_id.clone());
+      match content_b {
+        Ok(content) => {
+          let pos = [c.duplication_b.lo.0 as usize, c.duplication_b.hi.0 as usize];
+          if pos[0] <= pos[1] {
+            let start = pos[0];
+            let end = min(pos[1], content.len());
+            let subcontent = &content[start..end];
+            c.fragement_b(subcontent.to_string());
+          } else {
+            println!(
+              "duplication b {:?}/{:?} {:?}/{:?}",
+              c.duplication_a.source_id,
+              c.duplication_b.source_id,
+              c.duplication_b.lo,
+              c.duplication_b.hi
+            );
+          }
+        }
+        Err(e) => println!("{:?}/{:?}, {}", c.duplication_b.lo, c.duplication_b.hi, e),
+      }
+  }
+}
 }
 
 fn detect(
@@ -183,5 +234,18 @@ fn detect(
         }
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::{Detector, DetectorConfig};
+  #[test]
+  fn detect_files_should_work() {
+    let mut detector = Detector::new(DetectorConfig {
+      min_token: 50,
+    });
+    detector.detect_files(&String::from("./"));
+    assert_ne!(detector.clones.len(), 0);
   }
 }
