@@ -1,7 +1,7 @@
 extern crate crypto;
 use clap::{App, Arg};
 use serde_json;
-use std::fs::{File};
+use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 
 mod tokenmap;

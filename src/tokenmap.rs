@@ -39,6 +39,16 @@ impl Clone {
   pub fn fragement_b(&mut self, fragement_b: String) {
     self.duplication_b.fragement = Some(fragement_b);
   }
+  pub fn is_valid(&self) -> bool {
+    let is_valid = self.duplication_a.lo < self.duplication_a.hi && self.duplication_b.lo < self.duplication_b.hi;
+    if is_valid == false {
+      println!(
+        "{:?}",
+        self
+      );
+    }
+    is_valid
+  }
 }
 
 #[derive(Debug, Clone)]

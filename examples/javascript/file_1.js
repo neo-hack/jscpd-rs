@@ -1,4 +1,4 @@
-/**
+/**中
 *12312
 */
 function utf8_encode ( str_data ) {
