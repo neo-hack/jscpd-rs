@@ -238,7 +238,7 @@ mod tests {
   }
 
   #[test]
-  fn overflow_loc_shoule_ignore() {
+  fn overflow_loc_should_ignore() {
     let mut detector = Detector::new(DetectorConfig { min_token: 50 });
     let duplication_a = CloneLoc::new(
       String::from("examples/javascript/file_1.js"),
@@ -258,7 +258,7 @@ mod tests {
     detector.fragment();
   }
   #[test]
-  fn outside_loc_shoule_ignore() {
+  fn outside_loc_should_ignore() {
     let mut detector = Detector::new(DetectorConfig { min_token: 50 });
     let duplication_a = CloneLoc::new(
       String::from("examples/javascript/file_1.js"),
@@ -279,17 +279,18 @@ mod tests {
   }
 
   #[test]
-  fn single_inside_loc_shoule_ignore() {
+  // file_1.js have zh at bytepos(4)~bytepos(5)
+  fn single_inside_loc_should_ignore() {
     let mut detector = Detector::new(DetectorConfig { min_token: 50 });
     let duplication_a = CloneLoc::new(
       String::from("examples/javascript/file_1.js"),
       BytePos(0),
-      BytePos(1),
+      BytePos(4),
     );
     let duplication_b = CloneLoc::new(
       String::from("examples/javascript/file_1.js"),
       BytePos(0),
-      BytePos(1),
+      BytePos(4),
     );
     let clone = Clone {
       duplication_a,
