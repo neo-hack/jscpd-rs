@@ -40,12 +40,10 @@ impl Clone {
     self.duplication_b.fragement = Some(fragement_b);
   }
   pub fn is_valid(&self) -> bool {
-    let is_valid = self.duplication_a.lo < self.duplication_a.hi && self.duplication_b.lo < self.duplication_b.hi;
+    let is_valid = self.duplication_a.lo < self.duplication_a.hi
+      && self.duplication_b.lo < self.duplication_b.hi;
     if is_valid == false {
-      println!(
-        "{:?}",
-        self
-      );
+      println!("{:?}", self);
     }
     is_valid
   }
