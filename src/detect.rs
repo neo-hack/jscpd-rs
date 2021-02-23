@@ -111,8 +111,10 @@ impl Detector {
             let pos = [c.duplication_a.lo.0 as usize, c.duplication_a.hi.0 as usize];
             let start = pos[0];
             let end = min(pos[1], content.len());
-            let subcontent = &content[start..end];
-            c.fragement_a(subcontent.to_string());
+            let subcontent = content.get(start..end);
+            if subcontent.is_some() {
+              c.fragement_a(subcontent.unwrap().to_string());
+            }
           }
           Err(e) => println!("{:?}/{:?}, {}", c.duplication_a.lo, c.duplication_a.hi, e),
         }
@@ -122,8 +124,10 @@ impl Detector {
             let pos = [c.duplication_b.lo.0 as usize, c.duplication_b.hi.0 as usize];
             let start = pos[0];
             let end = min(pos[1], content.len());
-            let subcontent = &content[start..end];
-            c.fragement_b(subcontent.to_string());
+            let subcontent = content.get(start..end);
+            if subcontent.is_some() {
+              c.fragement_b(subcontent.unwrap().to_string());
+            }
           }
           Err(e) => println!("{:?}/{:?}, {}", c.duplication_b.lo, c.duplication_b.hi, e),
         }

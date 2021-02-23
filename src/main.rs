@@ -1,7 +1,7 @@
 extern crate crypto;
 use clap::{App, Arg};
 use serde_json;
-use std::fs::{read_to_string, File};
+use std::fs::File;
 use std::io::prelude::*;
 
 mod tokenmap;
@@ -12,7 +12,7 @@ mod detect;
 use detect::{Detector, DetectorConfig};
 
 fn save(clones: &Vec<Clone>) -> std::io::Result<()> {
-  let content = serde_json::to_string(clones)?;
+  let content = serde_json::to_string_pretty(clones)?;
   let mut file = File::create("result.json")?;
   file.write_all(content.as_bytes())?;
   Ok(())
