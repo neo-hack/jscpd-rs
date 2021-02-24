@@ -42,9 +42,6 @@ impl Clone {
   pub fn is_valid(&self) -> bool {
     let is_valid = self.duplication_a.lo < self.duplication_a.hi
       && self.duplication_b.lo < self.duplication_b.hi;
-    if is_valid == false {
-      println!("{:?}", self);
-    }
     is_valid
   }
 }

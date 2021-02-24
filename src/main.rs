@@ -3,6 +3,7 @@ use clap::{App, Arg};
 use serde_json;
 use std::fs::File;
 use std::io::prelude::*;
+use std::process;
 
 mod tokenmap;
 use tokenmap::Clone;
@@ -67,4 +68,5 @@ fn main() {
   detector.detect_files(cwd);
 
   save(&detector.clones).unwrap();
+  process::exit(0);
 }
