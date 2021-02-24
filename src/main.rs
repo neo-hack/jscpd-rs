@@ -44,6 +44,13 @@ fn main() {
         .about("Sets min tokens")
         .default_value("50"),
     )
+    .arg(
+      Arg::new("ignore")
+        .long("ignore")
+        .multiple_values(true)
+        .about("Sets ignore files pattern")
+        .required(false),
+    )
     .get_matches();
 
   let _filepath = match matches.value_of("filepath") {
@@ -61,8 +68,15 @@ fn main() {
     _ => "./",
   };
 
+  let ignore: Vec<String> = matches
+    .values_of("ignore")
+    .unwrap_or_default()
+    .map(|s| s.to_string())
+    .collect();
+
   let mut detector = Detector::new(DetectorConfig {
     min_token: min_token.parse().unwrap(),
+    ignore,
   });
   detector.detect_files(cwd);
 

@@ -18,6 +18,7 @@ pub struct Detector {
   md5: Md5,
   pub clones: Vec<Clone>,
   pub min_token: usize,
+  pub ignore: Vec<String>,
 }
 
 impl Default for Detector {
@@ -27,12 +28,14 @@ impl Default for Detector {
       stores: HashMap::new(),
       clones: Vec::new(),
       min_token: 50,
+      ignore: Vec::new(),
     }
   }
 }
 
 pub struct DetectorConfig {
   pub min_token: usize,
+  pub ignore: Vec<String>,
 }
 
 impl Detector {
@@ -42,6 +45,7 @@ impl Detector {
       stores: HashMap::new(),
       clones: Vec::new(),
       min_token: config.min_token,
+      ignore: config.ignore,
       ..Default::default()
     }
   }
@@ -53,6 +57,10 @@ impl Detector {
     _override_builder.add("**/*.jsx").unwrap();
     _override_builder.add("**/*.js").unwrap();
     _override_builder.add("!node_modules").unwrap();
+    for ig in &mut self.ignore {
+      ig.insert_str(0, "!");
+      _override_builder.add(ig).unwrap();
+    }
     let override_builder = _override_builder.build();
     if let Ok(instance) = override_builder {
       let mut builder = WalkBuilder::new(cwd);
@@ -232,14 +240,20 @@ mod tests {
 
   #[test]
   fn detect_files_should_work() {
-    let mut detector = Detector::new(DetectorConfig { min_token: 50 });
+    let mut detector = Detector::new(DetectorConfig {
+      min_token: 50,
+      ignore: Vec::new(),
+    });
     detector.detect_files(&String::from("./"));
     assert_ne!(detector.clones.len(), 0);
   }
 
   #[test]
   fn overflow_loc_should_ignore() {
-    let mut detector = Detector::new(DetectorConfig { min_token: 50 });
+    let mut detector = Detector::new(DetectorConfig {
+      min_token: 50,
+      ignore: Vec::new(),
+    });
     let duplication_a = CloneLoc::new(
       String::from("examples/javascript/file_1.js"),
       BytePos(1),
@@ -259,7 +273,10 @@ mod tests {
   }
   #[test]
   fn outside_loc_should_ignore() {
-    let mut detector = Detector::new(DetectorConfig { min_token: 50 });
+    let mut detector = Detector::new(DetectorConfig {
+      min_token: 50,
+      ignore: Vec::new(),
+    });
     let duplication_a = CloneLoc::new(
       String::from("examples/javascript/file_1.js"),
       BytePos(1),
@@ -281,7 +298,10 @@ mod tests {
   #[test]
   // file_1.js have zh at bytepos(4)~bytepos(5)
   fn single_inside_loc_should_ignore() {
-    let mut detector = Detector::new(DetectorConfig { min_token: 50 });
+    let mut detector = Detector::new(DetectorConfig {
+      min_token: 50,
+      ignore: Vec::new(),
+    });
     let duplication_a = CloneLoc::new(
       String::from("examples/javascript/file_1.js"),
       BytePos(0),
