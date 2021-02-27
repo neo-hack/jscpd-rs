@@ -1,6 +1,6 @@
 {
   "name": "@ruaaa/jscpdrs-cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "jscpdrsVersion": "0.1.1",
   "description": "jscpdrs cli installer",
   "main": "lib/index.js",
@@ -9,7 +9,6 @@
   },
   "scripts": {
     "postinstall": "node ./lib/install.js",
-    "preinstall": "node ./lib/uninstall.js",
     "prebuild": "rimraf lib",
     "build": "tsc",
     "pretest": "npm run build",
