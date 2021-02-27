@@ -134,3 +134,6 @@ result.json
 
 # macos
 .DS_Store
+
+# jscpd-cli
+/packages/jscpdrs-cli/bin/
