@@ -27,7 +27,7 @@ const getBinary = () => {
   const version = require('../package.json').jscpdrsVersion
   const author = "spring-catponents";
   const name = "jscpd-rs";
-  const url = `https://github.com/${author}/${name}/releases/download/v${version}/${name}-v${version}-${platform}.tar.gz`;
+  const url = `https://github.com/${author}/${name}/releases/download/v${version}/${name}-${platform}.tar.gz`;
   return new Binary(url, { name });
 };
 
