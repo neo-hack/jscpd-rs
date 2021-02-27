@@ -24,7 +24,7 @@ const getPlatform = () => {
 
 const getBinary = () => {
   const platform = getPlatform();
-  const version = require('../package.json').version
+  const version = require('../package.json').jscpdrsVersion
   const author = "spring-catponents";
   const name = "jscpd-rs";
   const url = `https://github.com/${author}/${name}/releases/download/v${version}/${name}-v${version}-${platform}.tar.gz`;
