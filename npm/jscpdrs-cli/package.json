@@ -1,6 +1,6 @@
 {
   "name": "@ruaaa/jscpdrs-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "jscpdrsVersion": "0.1.1",
   "description": "jscpdrs cli installer",
   "main": "lib/index.js",
