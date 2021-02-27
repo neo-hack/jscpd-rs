@@ -2,10 +2,10 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
-    "lib": ["es2016"],
     "moduleResolution": "node",
+    "esModuleInterop": true,
     "importHelpers": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "allowSyntheticDefaultImports": false,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -13,7 +13,7 @@
     "noImplicitReturns": true,
     "suppressImplicitAnyIndexErrors": true,
     "noUnusedLocals": true,
-    "outDir": ".lib"
+    "outDir": "lib"
   },
-  "exclude": ["node_modules", "lib"]
+  "exclude": ["node_modules", "lib"],
 }
