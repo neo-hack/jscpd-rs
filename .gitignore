@@ -136,4 +136,4 @@ result.json
 .DS_Store
 
 # jscpd-cli
-/packages/jscpdrs-cli/bin/
+/packages/jscpdrs-cli/lib
