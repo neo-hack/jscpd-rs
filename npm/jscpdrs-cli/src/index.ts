@@ -28,7 +28,7 @@ const getBinary = () => {
   const author = "spring-catponents";
   const name = "jscpd-rs";
   const url = `https://github.com/${author}/${name}/releases/download/v${version}/${name}-${platform}.tar.gz`;
-  return new Binary(url, { name });
+  return new Binary(name, url);
 };
 
 export const run = () => {
