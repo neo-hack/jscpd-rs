@@ -28,7 +28,8 @@ const getBinary = () => {
   const author = "spring-catponents";
   const name = "jscpd-rs";
   const binaryName = "jscpdrs";
-  const url = `https://github.com.cnpmjs.org/${author}/${name}/releases/download/v${version}/${binaryName}-${platform}.tar.gz`;
+  // https://github.com.cnpmjs.org
+  const url = `https://github.com/${author}/${name}/releases/download/v${version}/${binaryName}-${platform}.tar.gz`;
   return new Binary(`${binaryName}-cli`, url);
 };
 
