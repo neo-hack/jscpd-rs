@@ -30,7 +30,7 @@ const getBinary = () => {
   const binaryName = "jscpdrs";
   // https://github.com.cnpmjs.org
   const url = `https://github.com/${author}/${name}/releases/download/v${version}/${binaryName}-${platform}.tar.gz`;
-  return new Binary('bin', url);
+  return new Binary(`${binaryName}-cli`, url);
 };
 
 export const run = () => {
