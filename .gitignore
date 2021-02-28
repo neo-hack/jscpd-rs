@@ -134,3 +134,7 @@ result.json
 
 # macos
 .DS_Store
+
+# jscpd-cli
+/npm/jscpdrs-cli/lib
+builds
