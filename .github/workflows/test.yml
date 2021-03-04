@@ -1,0 +1,22 @@
+on: [push]
+
+name: test
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    name: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ steps.vars.outputs.arch }}
+          override: true
+      - name: Run test
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
