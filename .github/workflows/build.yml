@@ -1,4 +1,8 @@
-on: [push]
+on:
+  pull_request:
+    branches:
+      - master
+      - 'releases/*'
 
 name: build
 
