@@ -1,8 +1,9 @@
 on:
-  pull_request:
+  pull_request_review:
     branches:
       - master
       - 'releases/*'
+    types: ['submitted']
 
 name: build
 
