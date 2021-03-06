@@ -1,0 +1,86 @@
+on:
+  pull_request_review:
+    branches:
+      - master
+      - 'releases/*'
+    types: ['submitted']
+
+name: build
+
+jobs:
+  analyze-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      previous-tag: ${{ steps.previoustag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v2.3.3
+        with:
+          fetch-depth: 0
+      - name: Get previous tag
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+  build:
+    runs-on: ${{ matrix.os }}
+    needs: analyze-tags
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    name: ${{ matrix.os }}
+    steps:
+      - name: Set arch var
+        id: vars
+        run: |
+          echo ::set-output name=arch::\
+          $(echo '{ "ubuntu-latest": "x86_64-unknown-linux-musl", "macos-latest": "x86_64-apple-darwin" }' | jq -r 'to_entries[] | select(.key=="${{ matrix.os }}") | .value')
+      - uses: actions/checkout@v2
+      # - name: ⚡ Cache
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       ~/.cargo/registry
+      #       ~/.cargo/git
+      #       target
+      #     key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ steps.vars.outputs.arch }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --target ${{ steps.vars.outputs.arch }}
+      - name: Prepare builds Dir
+        run: mkdir builds && mkdir builds/jscpdrs-cli-${{ steps.vars.outputs.arch }}
+      - name: Compres Homebrew Pkg
+        if: ${{ steps.vars.outputs.arch == 'x86_64-apple-darwin' }}
+        run: |
+          cp target/${{ steps.vars.outputs.arch }}/release/jscpdrs builds/jscpdrs
+          cd builds
+          tar -czf jscpdrs.tar.gz jscpdrs
+          shasum -a 256 jscpdrs.tar.gz
+          ls
+          cd ..
+      - name: Release Homebrew
+        uses: softprops/action-gh-release@v1
+        if: ${{ steps.vars.outputs.arch == 'x86_64-apple-darwin' }}
+        with:
+          files: builds/jscpdrs.tar.gz
+          tag_name: ${{ needs.analyze-tags.outputs.previous-tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compress release
+        run: |
+          mv target/${{ steps.vars.outputs.arch }}/release/jscpdrs builds/jscpdrs-cli-${{ steps.vars.outputs.arch }}/jscpdrs-cli
+          cd builds
+          tar -czf jscpdrs-${{ steps.vars.outputs.arch }}.tar.gz jscpdrs-cli-${{ steps.vars.outputs.arch }}/jscpdrs-cli
+          ls
+          cd ..
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: builds/jscpdrs-${{ steps.vars.outputs.arch }}.tar.gz
+          tag_name: ${{ needs.analyze-tags.outputs.previous-tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
