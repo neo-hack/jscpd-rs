@@ -1,9 +1,6 @@
 on:
-  pull_request_review:
-    branches:
-      - master
-      - 'releases/*'
-    types: ['submitted']
+  schedule:
+    - cron: "0 11 * * *"
 
 name: build
 
