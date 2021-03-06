@@ -12,9 +12,9 @@ const getPlatform = () => {
   // if (type === "Windows_NT" && arch === "x64") {
   //   return "x86_64-pc-windows-msvc";
   // }
-  // if (type === "Linux" && arch === "x64") {
-  //   return "x86_64-unknown-linux-musl";
-  // }
+  if (type === "Linux" && arch === "x64") {
+    return "x86_64-unknown-linux-musl";
+  }
   if (type === "Darwin" && arch === "x64") {
     return "x86_64-apple-darwin";
   }
