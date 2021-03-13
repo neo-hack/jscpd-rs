@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - publish
+      - master
 
 name: build
 

@@ -12,9 +12,9 @@ use parse::tokensize_with_path;
 mod detect;
 use detect::{Detector, DetectorConfig};
 
-fn save(clones: &Vec<Clone>) -> std::io::Result<()> {
+fn save(clones: &Vec<Clone>, output: &str) -> std::io::Result<()> {
   let content = serde_json::to_string_pretty(clones)?;
-  let mut file = File::create("result.json")?;
+  let mut file = File::create(output)?;
   file.write_all(content.as_bytes())?;
   Ok(())
 }
@@ -52,6 +52,13 @@ fn main() {
         .about("Sets ignore files pattern")
         .required(false),
     )
+    .arg(
+      Arg::new("output")
+        .long("output")
+        .about("Sets output results file path")
+        .required(false)
+        .default_value("results.json"),
+    )
     .get_matches();
 
   let _filepath = match matches.value_of("filepath") {
@@ -69,6 +76,11 @@ fn main() {
     _ => "./",
   };
 
+  let output = match matches.value_of("output") {
+    Some(f) => f,
+    _ => "results.json",
+  };
+
   let ignore: Vec<String> = matches
     .values_of("ignore")
     .unwrap_or_default()
@@ -81,6 +93,6 @@ fn main() {
   });
   detector.detect_files(cwd);
 
-  save(&detector.clones).unwrap();
+  save(&detector.clones, output).unwrap();
   process::exit(0);
 }
