@@ -4,10 +4,11 @@
   "description": "detect copy paste in js/jsx/ts/tsx files",
   "main": "index.js",
   "devDependencies": {
-    "husky": "^4.3.8"
+    "husky": "^7.0.0"
   },
   "scripts": {
-    "test": "cargo test"
+    "test": "cargo test",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
@@ -17,12 +18,9 @@
     "jscpd",
     "rust"
   ],
-  "husky": {
-    "hooks": {
-      "pre-commit": "cargo fmt"
-    }
+  "author": {
+    "name": "JW"
   },
-  "author": "JW",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/spring-catponents/jscpd-rs/issues"
