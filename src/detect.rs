@@ -57,7 +57,7 @@ impl Detector {
     _override_builder.add("**/*.js").unwrap();
     _override_builder.add("!node_modules").unwrap();
     for ig in &mut self.ignore {
-      ig.insert_str(0, "!");
+      ig.insert(0, '!');
       _override_builder.add(ig).unwrap();
     }
     let override_builder = _override_builder.build();

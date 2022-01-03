@@ -107,14 +107,8 @@ impl TokenMap {
       let iend = min(self.position + self.min_token, self.size() - 1);
       let start = istart * 32;
       let end = iend * 32;
-      let start_loc = match self.get(istart) {
-        Some(item) => Some(item.span),
-        _ => None,
-      };
-      let end_loc = match self.get(iend) {
-        Some(item) => Some(item.span),
-        _ => None,
-      };
+      let start_loc = self.get(istart).map(|item| item.span);
+      let end_loc = self.get(iend).map(|item| item.span);
       let value = TokenItemValue {
         id: self.substring(start, end).to_string(),
         start: start_loc,
@@ -158,6 +152,6 @@ mod test {
       source_id: String::from("../examples/javascript/file1.js"),
     };
     let item = tokenmap.next();
-    assert_eq!(item.skip, true);
+    assert!(item.skip, true);
   }
 }
