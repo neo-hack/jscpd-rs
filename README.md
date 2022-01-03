@@ -5,7 +5,7 @@
 
 ## brew
 ```console
-brew tap spring-catponents/jscpdrs
+brew tap neo-hack/jscpdrs
 brew install jscpdrs
 ```
 
