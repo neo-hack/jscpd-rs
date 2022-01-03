@@ -44,7 +44,7 @@ pub fn tokensize_with_path(filepath: &Path) -> std::vec::Vec<swc_ecma_parser::to
 
   let fm = cm
     .load_file(filepath)
-    .expect(&format!("failed to load {}", filepath.display()));
+    .unwrap_or_else(|_| panic!("failed to load {}", filepath.display()));
 
   let lexer;
 

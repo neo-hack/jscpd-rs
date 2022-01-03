@@ -40,9 +40,7 @@ impl Clone {
     self.duplication_b.fragement = Some(fragement_b);
   }
   pub fn is_valid(&self) -> bool {
-    let is_valid = self.duplication_a.lo < self.duplication_a.hi
-      && self.duplication_b.lo < self.duplication_b.hi;
-    is_valid
+    self.duplication_a.lo < self.duplication_a.hi && self.duplication_b.lo < self.duplication_b.hi
   }
 }
 
@@ -128,7 +126,7 @@ impl TokenMap {
         last_pos = self.size() - self.min_token;
       }
       if self.position < last_pos {
-        self.position = self.position + 1;
+        self.position += 1;
         TokenItem {
           done: false,
           skip: false,

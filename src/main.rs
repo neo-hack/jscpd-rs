@@ -1,6 +1,5 @@
 extern crate crypto;
 use clap::{App, Arg};
-use serde_json;
 use std::fs::File;
 use std::io::prelude::*;
 use std::process;
@@ -12,7 +11,7 @@ use parse::tokensize_with_path;
 mod detect;
 use detect::{Detector, DetectorConfig};
 
-fn save(clones: &Vec<Clone>, output: &str) -> std::io::Result<()> {
+fn save(clones: &[Clone], output: &str) -> std::io::Result<()> {
   let content = serde_json::to_string_pretty(clones)?;
   let mut file = File::create(output)?;
   file.write_all(content.as_bytes())?;

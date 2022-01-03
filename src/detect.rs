@@ -46,7 +46,6 @@ impl Detector {
       clones: Vec::new(),
       min_token: config.min_token,
       ignore: config.ignore,
-      ..Default::default()
     }
   }
 
@@ -112,7 +111,7 @@ impl Detector {
   fn fragment(&mut self) {
     for c in &mut self.clones {
       let is_valid = c.is_valid();
-      if is_valid == true {
+      if is_valid {
         let content_a = read_to_string(c.duplication_a.source_id.clone());
         match content_a {
           Ok(content) => {
@@ -120,8 +119,8 @@ impl Detector {
             let start = pos[0];
             let end = min(pos[1], content.len());
             let subcontent = content.get(start..end);
-            if subcontent.is_some() {
-              c.fragement_a(subcontent.unwrap().to_string());
+            if let Some(item) = subcontent {
+              c.fragement_a(item.to_string());
             }
           }
           Err(e) => println!("{:?}/{:?}, {}", c.duplication_a.lo, c.duplication_a.hi, e),
@@ -133,8 +132,8 @@ impl Detector {
             let start = pos[0];
             let end = min(pos[1], content.len());
             let subcontent = content.get(start..end);
-            if subcontent.is_some() {
-              c.fragement_b(subcontent.unwrap().to_string());
+            if let Some(item) = subcontent {
+              c.fragement_b(item.to_string());
             }
           }
           Err(e) => println!("{:?}/{:?}, {}", c.duplication_b.lo, c.duplication_b.hi, e),
@@ -154,7 +153,7 @@ fn detect(
   loop {
     let item = tokenmap.next();
     let skip = item.skip;
-    if skip == true {
+    if skip {
       break;
     }
     let hi = item.value.end.unwrap().hi;
@@ -201,11 +200,8 @@ fn detect(
       // code frame not in store
       _ => {
         // save clone
-        match clone {
-          Some(item) => {
-            clones.push(item.clone());
-          }
-          _ => (),
+        if let Some(item) = clone {
+          clones.push(item.clone());
         }
         // empty clone
         clone = None;
@@ -213,20 +209,15 @@ fn detect(
         store.insert(item.value.id.to_string(), item.clone());
       }
     }
-    if done == true {
+    if done {
       // save clone
-      match clone {
-        Some(item) => {
-          clones.push(item.clone());
-        }
-        _ => (),
+      if let Some(item) = clone {
+        clones.push(item);
       }
       break;
-    } else {
-      if let Some(ref mut c) = clone {
-        if saved.is_some() {
-          c.enlarge(saved.unwrap(), hi);
-        }
+    } else if let Some(ref mut c) = clone {
+      if let Some(item) = saved {
+        c.enlarge(item, hi);
       }
     }
   }
